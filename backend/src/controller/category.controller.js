@@ -1,3 +1,4 @@
+import Budget from "../models/budget.model.js";
 import Category from "../models/category.model.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -63,6 +64,9 @@ export const deleteCategory = asyncHandler(async (req, res) => {
   if (count > 0) {
     throw new ApiError(409, `Cannot delete: ${count} transaction(s) use this category`);
   }
+
+  await Budget.deleteMany({ user: req.user.id, category: category._id });
+  await category.deleteOne();
 
   await category.deleteOne();
   res.json({ success: true, message: "Category deleted" });
