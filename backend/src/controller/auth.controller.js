@@ -35,3 +35,10 @@ export const logout = asyncHandler(async (req, res) => {
   res.clearCookie("token", { ...cookieOptions, maxAge: undefined });
   res.json({ success: true, message: "Logged out" });
 });
+
+export const getMe = asyncHandler(async (req,res) => {
+    res.json({
+        success:true,
+        user:req.user,
+    })
+})
