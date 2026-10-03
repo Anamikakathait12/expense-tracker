@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./routes/auth.routes.js";
 import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -13,15 +13,16 @@ app.use(
   })
 );
 
-app.use(express.json()); // parses JSON request bodies into req.body
-app.use(cookieParser()); // parses cookies into req.cookies
+app.use(express.json());
+app.use(cookieParser());
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "API is running" });
 });
 
+app.use("/api/auth", authRoutes);   // ← mounts /register, /login, /logout under /api/auth
 
-app.use(notFound);     // catches any URL that doesn't match a route
-app.use(errorHandler); // formats every error into a consistent JSON response
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;
