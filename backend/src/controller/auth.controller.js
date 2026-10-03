@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import Category from "../models/category.model.js";
+import defaultCategories from "../utils/defaultCategories.js";
 import { generateToken, cookieOptions } from "../utils/token.js";
 
 export const register = asyncHandler(async (req, res) => {
@@ -10,6 +12,9 @@ export const register = asyncHandler(async (req, res) => {
   if (existing) throw new ApiError(409, "Email already registered");
 
   const user = await User.create({ username, email, password });
+  
+  await Category.insertMany(defaultCategories.map((c) => ({ ...c, user: user._id })));
+
 
   const token = generateToken(user._id);
   res.cookie("token", token, cookieOptions);

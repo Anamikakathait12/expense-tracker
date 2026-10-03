@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+import transactionRoutes from "./routes/transaction.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
@@ -20,7 +22,11 @@ app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "API is running" });
 });
 
-app.use("/api/auth", authRoutes);   // ← mounts /register, /login, /logout under /api/auth
+app.use("/api/auth", authRoutes);
+
+app.use("/api/categories", categoryRoutes);
+app.use("/api/transactions", transactionRoutes);
+
 
 app.use(notFound);
 app.use(errorHandler);
