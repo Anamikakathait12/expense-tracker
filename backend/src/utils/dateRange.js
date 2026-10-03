@@ -28,3 +28,20 @@ export const monthRange = (month) => {
 // Current month as "2026-10", in the app timezone
 export const currentMonth = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: tz(), year: "numeric", month: "2-digit" }).format(new Date());
+
+
+// The app timezone name, e.g. "Asia/Kolkata" (MongoDB date operators need it)
+export const getTimezone = tz;
+
+// "2026-10", -5 -> "2026-05"
+export const shiftMonth = (month, delta) => {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+};
+
+// "2026-02" -> 28
+export const daysInMonth = (month) => {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+};
