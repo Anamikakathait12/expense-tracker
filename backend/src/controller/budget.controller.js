@@ -6,13 +6,7 @@ import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { toPaise, toRupees } from "../utils/money.js";
 
-const currentMonth = () => new Date().toISOString().slice(0, 7); // "2026-10"
-
-// "2026-10" -> [1 Oct 00:00, 1 Nov 00:00) in UTC
-const monthRange = (month) => {
-  const [y, m] = month.split("-").map(Number);
-  return { start: new Date(Date.UTC(y, m - 1, 1)), end: new Date(Date.UTC(y, m, 1)) };
-};
+import { monthRange, currentMonth } from "../utils/dateRange.js";
 
 const statusFor = (percent) =>
   percent >= 100 ? "exceeded" : percent >= 80 ? "warning" : "ok";
