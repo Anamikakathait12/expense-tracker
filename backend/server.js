@@ -1,5 +1,5 @@
 import "dotenv/config";
-import dns from "node:dns";
+import "./src/utils/dnsOverride.js";
 import app from "./src/app.js";
 import connectDB from "./src/db/db.js";
 

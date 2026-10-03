@@ -226,3 +226,53 @@ export const getMonthlyTrend = asyncHandler(async (req, res) => {
 
   res.json({ success: true, months, trend });
 });
+
+// Difference between two paise values, with direction and percent
+const changeOf = (currentPaise, previousPaise) => {
+  const diff = currentPaise - previousPaise;
+  return {
+    amount: toRupees(diff),
+    // no baseline to compare against when last month was 0
+    percent:
+      previousPaise === 0
+        ? diff === 0 ? 0 : null
+        : Math.round((diff / previousPaise) * 1000) / 10,
+    direction: diff > 0 ? "up" : diff < 0 ? "down" : "same",
+  };
+};
+
+export const getCompare = asyncHandler(async (req, res) => {
+  const month = req.validatedQuery.month || currentMonth();
+  const previousMonth = shiftMonth(month, -1);
+
+  const [cur, prev] = await Promise.all([
+    getMonthTotals(req.user.id, month),
+    getMonthTotals(req.user.id, previousMonth),
+  ]);
+
+  const curBalance = cur.incomePaise - cur.expensePaise;
+  const prevBalance = prev.incomePaise - prev.expensePaise;
+  const balanceChange = changeOf(curBalance, prevBalance);
+
+  res.json({
+    success: true,
+    month,
+    previousMonth,
+    current: {
+      income: toRupees(cur.incomePaise),
+      expense: toRupees(cur.expensePaise),
+      balance: toRupees(curBalance),
+    },
+    previous: {
+      income: toRupees(prev.incomePaise),
+      expense: toRupees(prev.expensePaise),
+      balance: toRupees(prevBalance),
+    },
+    change: {
+      income: changeOf(cur.incomePaise, prev.incomePaise),
+      expense: changeOf(cur.expensePaise, prev.expensePaise),
+      // no percent for balance: it can be negative or near zero, which makes a percent misleading
+      balance: { amount: balanceChange.amount, direction: balanceChange.direction },
+    },
+  });
+});

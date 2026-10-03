@@ -1,6 +1,5 @@
-import dns from "node:dns";
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
 import "dotenv/config";
+import "../utils/dnsOverride.js";
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import Category from "../models/category.model.js";

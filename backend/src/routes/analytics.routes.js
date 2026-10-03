@@ -5,6 +5,7 @@ import {
   getTopExpenses,
   getDaily,
   getMonthlyTrend,
+  getCompare,
 } from "../controller/analytics.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import validate from "../middleware/validate.middleware.js";
@@ -25,5 +26,6 @@ router.get("/by-category", validate(byCategoryQuerySchema, "query"), getByCatego
 router.get("/top-expenses", validate(topExpensesQuerySchema, "query"), getTopExpenses);
 router.get("/daily", validate(dailyQuerySchema, "query"), getDaily);
 router.get("/monthly-trend", validate(trendQuerySchema, "query"), getMonthlyTrend);
+router.get("/compare", validate(monthQuerySchema, "query"), getCompare);
 
 export default router;
