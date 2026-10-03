@@ -1,4 +1,5 @@
-import "dotenv/config";          // must be first so env vars exist before other files use them
+import "dotenv/config";
+import dns from "node:dns";
 import app from "./src/app.js";
 import connectDB from "./src/db/db.js";
 
