@@ -9,3 +9,7 @@ export const toDateInput = (d = new Date()) => {
   const x = new Date(d);
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
 };
+
+// 150000 -> "1.5L"  (short numbers for chart axes)
+export const formatCompact = (n) =>
+  new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 }).format(n);

@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
+import Analytics from "./pages/Analytics";
 
 export default function App() {
   return (
@@ -22,6 +23,8 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
+              <Route path="/transactions" element={<Transactions />} />
+<Route path="/analytics" element={<Analytics />} />
             </Route>
           </Route>
 

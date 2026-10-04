@@ -18,3 +18,9 @@ export const monthLabel = (month) => {
   const [y, m] = month.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 };
+
+const NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "2026-09" -> "Sep '26"  (short label for chart axes)
+export const shortMonth = (month) =>
+  `${NAMES[Number(month.slice(5, 7)) - 1]} '${month.slice(2, 4)}`;

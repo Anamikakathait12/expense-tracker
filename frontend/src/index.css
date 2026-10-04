@@ -173,3 +173,19 @@ tr:last-child td { border-bottom: 0; }
 .recent-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
 .recent-row:last-child { border-bottom: 0; }
 .dim { opacity: 0.6; transition: opacity 0.15s; }
+
+.section-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 8px 0 14px; }
+.section-head h2 { margin: 0; font-size: 18px; }
+
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { padding: 6px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.seg button.active { background: var(--primary); color: #fff; }
+
+.chart-box { height: 280px; }
+
+.rank-line { display: flex; align-items: center; gap: 12px; }
+.rank {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--bg);
+  border: 1px solid var(--border); display: grid; place-items: center;
+  font-size: 12px; color: var(--muted); flex-shrink: 0;
+}
