@@ -47,3 +47,12 @@ export const getMe = asyncHandler(async (req,res) => {
         user:req.user,
     })
 })
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(req.user.id, req.body, {
+    new: true,            // return the updated document
+    runValidators: true,  // apply the schema rules to the new values
+  });
+
+  res.json({ success: true, message: "Profile updated", user });
+});
