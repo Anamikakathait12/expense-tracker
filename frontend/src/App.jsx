@@ -1,15 +1,28 @@
-import { useEffect, useState } from "react";
-import api from "./api/axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import GuestRoute from "./components/GuestRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
-  const [status, setStatus] = useState("Checking API...");
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route element={<GuestRoute />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
 
-  useEffect(() => {
-    api
-      .get("/health")
-      .then((res) => setStatus(res.data.message))
-      .catch((err) => setStatus("API not reachable: " + err.message));
-  }, []);
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Dashboard />} />
+          </Route>
 
-  return <h1 style={{ padding: 24 }}>Expense Tracker: {status}</h1>;
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }
