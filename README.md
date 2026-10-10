@@ -2,7 +2,7 @@
 
 A full-stack MERN application where users log income and expenses, organise them by category, set monthly budgets, and see analytics about their spending.
 
-> **Status:** the backend (REST API) is complete and tested. The React frontend is in progress.
+> **Status:** the MERN application includes the Express API and React frontend. The live demo creates an isolated, expiring sandbox for each visitor.
 
 ## Features
 
@@ -10,6 +10,8 @@ A full-stack MERN application where users log income and expenses, organise them
 - Register, login and logout
 - JWT stored in an httpOnly cookie, with an auth middleware
 - `GET /me` to restore the session after a page refresh
+- Private demo sandbox with randomized sample data; no shared demo account
+- Demo accounts and their data expire automatically; demo users are limited to 300 transactions, 30 categories and 30 budgets
 
 **Transactions**
 - Create, edit and delete income and expense entries
@@ -42,7 +44,7 @@ A full-stack MERN application where users log income and expenses, organise them
 | Database | MongoDB (Atlas) with Mongoose |
 | Auth | JWT in an httpOnly cookie, bcrypt password hashing |
 | Validation | Zod |
-| Frontend (planned) | React (Vite), Recharts, Axios |
+| Frontend | React (Vite), React Router, Recharts, Axios |
 
 ## Design decisions
 
@@ -63,13 +65,17 @@ expense-tracker/
     src/
       app.js
       db/db.js
+      config/        demo expiry and active-session settings
       models/        user, category, transaction, budget
       controller/    auth, category, transaction, budget, analytics
       routes/        auth, category, transaction, budget, analytics
-      middleware/    auth, validate, error
+      middleware/    auth, validate, error, demo rate limiter
       validators/    auth, category, transaction, budget, analytics
+      services/      demo sandbox creation and fallback cleanup
       utils/         ApiError, asyncHandler, token, money, dateRange, defaultCategories
       seed/          seed.js, explain.js
+  frontend/
+    src/             React application, pages, components and API client
 ```
 
 ## Getting started
@@ -100,6 +106,8 @@ Create your environment file from the example (Windows: `copy .env.example .env`
 | `JWT_EXPIRES_IN` | Token lifetime, e.g. `7d` |
 | `CLIENT_URL` | Frontend origin allowed by CORS, e.g. `http://localhost:5173` |
 | `APP_TIMEZONE` | Timezone for month and day boundaries, e.g. `Asia/Kolkata` |
+| `DEMO_TTL_MINUTES` | Demo sandbox lifetime in minutes (default `120`, clamped to `5`–`1440`) |
+| `DEMO_MAX_ACTIVE` | Maximum active demo sandboxes (default `200`) |
 | `DNS_SERVERS` | Optional. See Troubleshooting |
 
 Generate a secret with:
@@ -116,7 +124,25 @@ Never commit `.env`. It is listed in `.gitignore`.
 npm run dev
 ```
 
-You should see `MongoDB connected` and `Server running on port 5000`. Check `http://localhost:5000/api/health`.
+You should see `MongoDB connected` and `Server running on port 5000`. Check `http://localhost:5000/api/health`; a running version with demo support returns `features.demo: true`.
+
+### Run the frontend
+
+In a second terminal:
+
+```bash
+cd expense-tracker/frontend
+npm install
+npm run dev
+```
+
+The development frontend defaults to `http://localhost:5173`, and the API defaults to `http://localhost:5000/api`. To use a different API origin, set `VITE_API_URL` to the API base URL, including `/api` (for example, `https://api.example.com/api`).
+
+### Demo sandbox lifecycle
+
+Each `POST /api/auth/demo` request creates a new user with its own randomized sample data and sets the normal httpOnly auth cookie. Visitors can create, edit and delete data in their sandbox. The demo endpoint is rate limited to 20 requests per hour per IP; new demo creation is also paused with a `503` response when the active-session cap is reached. Demo-only create limits return `429` with a friendly message.
+
+`DEMO_TTL_MINUTES` sets a sandbox lifetime from 5 to 1440 minutes (default 120). MongoDB TTL indexes automatically expire the demo user, categories, transactions and budgets; a periodic server cleanup is a fallback. Real-user documents do not receive an expiry date and are not affected. `DEMO_MAX_ACTIVE` sets the active sandbox cap (default 200).
 
 ### Seed test data (development only)
 
@@ -146,6 +172,8 @@ All routes except auth and health require a logged-in user (the `token` cookie).
 | POST | `/api/auth/login` | Log in |
 | POST | `/api/auth/logout` | Log out |
 | GET | `/api/auth/me` | Current user |
+| POST | `/api/auth/demo` | Start an isolated demo sandbox |
+| GET | `/api/health` | API status and feature flags, including `features.demo` |
 
 ### Categories
 
@@ -229,6 +257,8 @@ Endpoints were tested manually with Postman, including validation failures, owne
 - **`querySrv ECONNREFUSED` when connecting to Atlas:** some networks cannot resolve Atlas SRV records. Set `DNS_SERVERS=8.8.8.8,8.8.4.4` in `.env`.
 - **Data appears in a database called `test`:** the database name is missing from `MONGO_URI`. Add it after the host: `.../expense-tracker?retryWrites=true`.
 - **`401` right after logging in from a browser or Postman:** the `token` cookie was not sent. Check that cookies are enabled and the request goes to the same host.
+- **`POST /api/auth/demo` returns 404:** check that the deployed API has the demo route and that `GET /api/health` returns `"features":{"demo":true}`. The frontend request uses the API base URL plus `/auth/demo`; set `VITE_API_URL` to the API origin ending in `/api`.
+- **Demo session is busy:** the configured active sandbox cap may have been reached. Wait for an existing sandbox to expire, or raise `DEMO_MAX_ACTIVE` if the server can support more active sessions.
 
 ## Roadmap
 
@@ -237,10 +267,10 @@ Endpoints were tested manually with Postman, including validation failures, owne
 - [x] Transactions CRUD with filters, search, sorting, pagination
 - [x] Budgets with spent vs limit
 - [x] Analytics endpoints
-- [ ] React frontend: auth pages, dashboard, transactions, budgets, analytics charts
+- [x] React frontend: auth pages, dashboard, transactions, budgets, analytics charts and demo sandbox
 - [ ] CSV export
 - [ ] Recurring transactions
-- [ ] Rate limiting, Helmet, production CORS and cookie settings
+- [ ] Broader API hardening: Helmet, production CORS and cookie review
 - [ ] Deployment (Render or Railway for the API, Vercel for the frontend, MongoDB Atlas)
 - [ ] Refresh tokens, forgot password, receipt upload, savings goals, unit tests
 

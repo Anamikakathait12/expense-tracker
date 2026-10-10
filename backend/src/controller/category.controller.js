@@ -10,12 +10,17 @@ export const createCategory = asyncHandler(async (req, res) => {
   const existing = await Category.findOne({ user: req.user.id, name });
   if (existing) throw new ApiError(409, "Category already exists");
 
+  if (req.user.isDemo && await Category.countDocuments({ user: req.user.id }) >= 30) {
+    throw new ApiError(429, "This demo sandbox has reached its 30 category limit.");
+  }
+
   const category = await Category.create({
     user: req.user.id, // from the protect middleware, never from the request body
     name,
     type,
     color,
     icon,
+    ...(req.user.isDemo && { expiresAt: req.user.expiresAt }),
   });
 
   res.status(201).json({ success: true, category });

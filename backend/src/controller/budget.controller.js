@@ -23,11 +23,16 @@ export const createBudget = asyncHandler(async (req, res) => {
   const existing = await Budget.findOne({ user: req.user.id, category, month });
   if (existing) throw new ApiError(409, `A budget for ${cat.name} in ${month} already exists`);
 
+  if (req.user.isDemo && await Budget.countDocuments({ user: req.user.id }) >= 30) {
+    throw new ApiError(429, "This demo sandbox has reached its 30 budget limit.");
+  }
+
   const budget = await Budget.create({
     user: req.user.id,
     category,
     month,
     limit: toPaise(limit),
+    ...(req.user.isDemo && { expiresAt: req.user.expiresAt }),
   });
 
   await budget.populate("category", "name color type");

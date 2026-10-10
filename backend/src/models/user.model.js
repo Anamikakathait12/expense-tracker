@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
-    {
+    {   isDemo: { type: Boolean, default: false },
         username: { type: String, required: true, trim: true, minLength: 3 },
         email: {
             type: String,
@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema(
         password: { type: String, requied: true, minLength: 6, select: false },
         role: { type: String, enum: ["user", "admin"], default: "user" },
         currency: { type: String, default: "INR" },
+        expiresAt: { type: Date },
     },
     { timestamps: true } //adds createdAt and updatedAt automatically
 );
@@ -39,4 +40,6 @@ userSchema.set("toJSON",{
     },
 });
 
+userSchema.index({ isDemo: 1, createdAt: 1 }); // makes the cleanup query fast
+userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export default mongoose.model("User",userSchema);

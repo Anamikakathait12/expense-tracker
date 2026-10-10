@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import getErrorMessage from "../utils/getErrorMessage";
+import DemoButton from "../components/DemoButton";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, demoExpired } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -25,11 +26,19 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h2 style={{ marginTop: 0 }}>Log in</h2>
+    <main className="auth-page">
+      <form className="card auth-card" onSubmit={handleSubmit}>
+        <span className="auth-brand-mark" aria-hidden="true">E</span>
+        <p className="auth-eyebrow">Welcome back</p>
+        <h1 className="auth-title">Log in</h1>
+        <p className="auth-description">Pick up where you left off with your finances.</p>
 
-        {error && <div className="error">{error}</div>}
+        {demoExpired && (
+          <p className="demo-expired-notice" role="status">
+            Your demo session has ended. Everything resets automatically. Start a new one anytime.
+          </p>
+        )}
+        {error && <div className="error" role="alert">{error}</div>}
 
         <div className="field">
           <label htmlFor="email">Email</label>
@@ -43,14 +52,15 @@ export default function Login() {
                  value={form.password} onChange={handleChange} />
         </div>
 
-        <button className="btn" disabled={submitting}>
+        <button className="btn auth-submit" disabled={submitting}>
           {submitting ? "Logging in..." : "Log in"}
         </button>
 
         <p className="muted">
-          No account? <Link to="/register">Register</Link>
+          No account? <Link to="/register">Create one</Link>
         </p>
       </form>
-    </div>
+      <DemoButton label="Try the demo" className="btn auth-demo-button" />
+    </main>
   );
 }

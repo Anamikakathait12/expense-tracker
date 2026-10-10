@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { createElement, useState } from "react";
 import { createTransaction, updateTransaction } from "../api/transactions";
+import categoryIcon from "../utils/categoryIcon";
 import getErrorMessage from "../utils/getErrorMessage";
 import { toDateInput } from "../utils/format";
 import { PAYMENT_METHODS } from "../utils/constants";
@@ -29,6 +30,10 @@ export default function TransactionForm({ categories, initial, onSaved, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!form.category) {
+      setError("Choose a category.");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -56,7 +61,7 @@ export default function TransactionForm({ categories, initial, onSaved, onCancel
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <div className="form-row">
         <div className="field">
@@ -75,14 +80,57 @@ export default function TransactionForm({ categories, initial, onSaved, onCancel
       </div>
 
       <div className="form-row">
-        <div className="field">
-          <label htmlFor="category">Category</label>
-          <select id="category" name="category" required value={form.category} onChange={handleChange}>
-            <option value="">Select...</option>
-            {options.map((c) => (
-              <option key={c._id} value={c._id}>{c.name}</option>
+        <div className="field category-picker-field">
+          <span className="field-label">Category</span>
+          <div
+            className="category-chip-group"
+            role="radiogroup"
+            aria-label="Category"
+            aria-required="true"
+            onKeyDown={(event) => {
+              if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(event.key)) return;
+              event.preventDefault();
+              if (options.length === 0) return;
+              const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1;
+              const currentIndex = options.findIndex((category) => category._id === form.category);
+              const nextIndex = currentIndex < 0
+                ? (direction > 0 ? 0 : options.length - 1)
+                : (currentIndex + direction + options.length) % options.length;
+              const nextCategory = options[nextIndex];
+              if (nextCategory) {
+                setForm((current) => ({ ...current, category: nextCategory._id }));
+                event.currentTarget.querySelector(`[data-category-id="${nextCategory._id}"]`)?.focus();
+              }
+            }}
+          >
+            {options.map((category) => (
+              <button
+                key={category._id}
+                type="button"
+                role="radio"
+                aria-checked={form.category === category._id}
+                className={`category-chip${form.category === category._id ? " selected" : ""}`}
+                tabIndex={
+                  form.category === category._id || (!form.category && options[0]?._id === category._id)
+                    ? 0
+                    : -1
+                }
+                style={{ "--category-color": category.color }}
+                data-category-id={category._id}
+                onClick={() => {
+                  setError("");
+                  setForm((current) => ({ ...current, category: category._id }));
+                }}
+              >
+                <span className="icon-badge" aria-hidden="true">
+                  {createElement(categoryIcon(category.icon), { size: 17 })}
+                </span>
+                <span>{category.name}</span>
+              </button>
             ))}
-          </select>
+            {options.length === 0 && <p className="muted category-picker-empty">No categories for this type.</p>}
+          </div>
+          {!form.category && <span className="hint">Choose a category to continue.</span>}
         </div>
 
         <div className="field">
@@ -105,7 +153,7 @@ export default function TransactionForm({ categories, initial, onSaved, onCancel
         <input id="note" name="note" maxLength={200} value={form.note} onChange={handleChange} />
       </div>
 
-      <div className="form-actions">
+      <div className="form-actions form-actions-primary">
         <button type="button" className="btn btn-outline" onClick={onCancel}>Cancel</button>
         <button className="btn" disabled={submitting}>
           {submitting ? "Saving..." : initial ? "Save changes" : "Add transaction"}

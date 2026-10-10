@@ -9,6 +9,7 @@ import analyticsRoutes from "./routes/analytics.routes.js";
 import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
+app.set("trust proxy", 1); // on Render the real client IP arrives in a header
 
 app.use(
   cors({
@@ -21,7 +22,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "API is running" });
+  res.json({ success: true, message: "API is running", features: { demo: true } });
 });
 
 app.use("/api/auth", authRoutes);

@@ -17,16 +17,19 @@ const budgetSchema = new mongoose.Schema(
       min: [1, "Limit must be greater than 0"],
       validate: { validator: Number.isInteger, message: "Limit must be a whole number of paise" },
     },
+    expiresAt: { type: Date },
   },
   { timestamps: true }
 );
 
 // One budget per category per month for each user
 budgetSchema.index({ user: 1, category: 1, month: 1 }, { unique: true });
+budgetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 budgetSchema.set("toJSON", {
   transform: (doc, ret) => {
     ret.limit = toRupees(ret.limit); // paise -> rupees
+    delete ret.expiresAt;
     delete ret.__v;
     return ret;
   },

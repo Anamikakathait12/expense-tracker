@@ -22,6 +22,7 @@ const transactionSchema = new mongoose.Schema(
             enum: ["cash", "upi", "card", "bank_transfer", "other"],
             default: "cash",
         },
+        expiresAt: { type: Date },
     },
     { timestamps: true }
 );
@@ -29,11 +30,13 @@ const transactionSchema = new mongoose.Schema(
 // The two indexes from your spec
 transactionSchema.index({ user: 1, date: -1 });//ascending and descending order
 transactionSchema.index({ user: 1, category: 1 });//ascending both
+transactionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 
 transactionSchema.set("toJSON", {
     transform: (doc, ret) => {
         ret.amount = toRupees(ret.amount); // paise → rupees for API responses
+        delete ret.expiresAt;
         delete ret.__v;
         return ret;
     },

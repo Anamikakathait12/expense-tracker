@@ -16,6 +16,10 @@ const assertValidCategory = async (categoryId, type, userId) => {
 export const createTransaction = asyncHandler(async (req, res) => {
   const { type, amount, category, date, note, paymentMethod } = req.body;
 
+  if (req.user.isDemo && await Transaction.countDocuments({ user: req.user.id }) >= 300) {
+    throw new ApiError(429, "This demo sandbox has reached its 300 transaction limit.");
+  }
+
   await assertValidCategory(category, type, req.user.id);
 
   const transaction = await Transaction.create({
@@ -26,6 +30,7 @@ export const createTransaction = asyncHandler(async (req, res) => {
     date,
     note,
     paymentMethod,
+    ...(req.user.isDemo && { expiresAt: req.user.expiresAt }),
   });
 
   await transaction.populate("category", "name color type");

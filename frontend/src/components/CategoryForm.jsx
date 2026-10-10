@@ -30,7 +30,7 @@ export default function CategoryForm({ initial, onSaved, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div className="error">{error}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <div className="field">
         <label htmlFor="name">Name</label>
@@ -60,7 +60,7 @@ export default function CategoryForm({ initial, onSaved, onCancel }) {
         <p className="hint">A category that has transactions can't change its type.</p>
       )}
 
-      <div className="form-actions">
+      <div className="form-actions form-actions-primary">
         <button type="button" className="btn btn-outline" onClick={onCancel}>Cancel</button>
         <button className="btn" disabled={submitting}>
           {submitting ? "Saving..." : initial ? "Save changes" : "Add category"}

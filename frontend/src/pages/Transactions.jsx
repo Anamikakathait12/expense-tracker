@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { getTransactions, deleteTransaction } from "../api/transactions";
 import { getCategories } from "../api/categories";
 import useDebounce from "../hooks/useDebounce";
@@ -8,6 +8,9 @@ import getErrorMessage from "../utils/getErrorMessage";
 import { formatMoney, formatDate } from "../utils/format";
 import { paymentLabel } from "../utils/constants";
 import { useAuth } from "../context/AuthContext";
+import { useQuickAdd } from "../context/QuickAddContext";
+import categoryIcon from "../utils/categoryIcon";
+import { Pencil, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 
 const EMPTY_FILTERS = { type: "", category: "", from: "", to: "", sort: "-date" };
 const LIMIT = 10;
@@ -26,6 +29,7 @@ const buildParams = (filters, search, page) => {
 
 export default function Transactions() {
   const { user } = useAuth();
+  const { openAdd, version } = useQuickAdd();
   const currency = user.currency || "INR";
 
   const [categories, setCategories] = useState([]);
@@ -39,6 +43,7 @@ export default function Transactions() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [modal, setModal] = useState({ open: false, transaction: null });
 
@@ -52,6 +57,8 @@ export default function Transactions() {
   // Reload whenever a filter, the search, the page or reloadKey changes
   useEffect(() => {
     let ignore = false;
+    // This flag represents the start of the request for the current filters.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError("");
 
@@ -67,7 +74,7 @@ export default function Transactions() {
     return () => {
       ignore = true; // an older, slower response must not overwrite a newer one
     };
-  }, [filters, debouncedSearch, page, reloadKey]);
+  }, [filters, debouncedSearch, page, reloadKey, version]);
 
   const changeFilter = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -84,6 +91,12 @@ export default function Transactions() {
     setSearch("");
     setPage(1);
   };
+
+  const activeFilterCount = Number(Boolean(filters.type))
+    + Number(Boolean(filters.category))
+    + Number(Boolean(filters.from))
+    + Number(Boolean(filters.to))
+    + Number(filters.sort !== EMPTY_FILTERS.sort);
 
   const closeModal = () => setModal({ open: false, transaction: null });
 
@@ -109,43 +122,82 @@ export default function Transactions() {
     <>
       <div className="page-header">
         <h1>Transactions</h1>
-        <button className="btn" onClick={() => setModal({ open: true, transaction: null })}>
+        <button className="btn btn-primary transaction-add-button" onClick={openAdd}>
           + Add transaction
         </button>
       </div>
 
-      <div className="toolbar">
-        <input className="input" placeholder="Search notes..." value={search} onChange={changeSearch} />
-
-        <select className="input" name="type" value={filters.type} onChange={changeFilter}>
-          <option value="">All types</option>
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-        </select>
-
-        <select className="input" name="category" value={filters.category} onChange={changeFilter}>
-          <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c._id} value={c._id}>{c.name}</option>
-          ))}
-        </select>
-
-        <input className="input" type="date" name="from" value={filters.from}
-               onChange={changeFilter} aria-label="From date" />
-        <input className="input" type="date" name="to" value={filters.to}
-               onChange={changeFilter} aria-label="To date" />
-
-        <select className="input" name="sort" value={filters.sort} onChange={changeFilter}>
-          <option value="-date">Newest first</option>
-          <option value="date">Oldest first</option>
-          <option value="-amount">Highest amount</option>
-          <option value="amount">Lowest amount</option>
-        </select>
-
-        <button className="btn btn-outline" onClick={clearFilters}>Clear</button>
+      <div className="transaction-search-row">
+        <label className="transaction-search">
+          <Search size={19} aria-hidden="true" />
+          <span className="sr-only">Search transactions</span>
+          <input
+            className="input"
+            placeholder="Search notes..."
+            value={search}
+            onChange={changeSearch}
+          />
+        </label>
+        <button
+          className={`btn btn-soft transaction-filter-toggle${filtersOpen ? " is-open" : ""}`}
+          type="button"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls="transaction-filters"
+        >
+          <SlidersHorizontal size={17} aria-hidden="true" />
+          Filters
+          {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+        </button>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {filtersOpen && (
+        <section className="transaction-filter-panel" id="transaction-filters" aria-label="Transaction filters">
+          <label className="transaction-filter-field">
+            <span>Type</span>
+            <select className="input" name="type" value={filters.type} onChange={changeFilter}>
+              <option value="">All types</option>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </label>
+
+          <label className="transaction-filter-field">
+            <span>Category</span>
+            <select className="input" name="category" value={filters.category} onChange={changeFilter}>
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="transaction-filter-field">
+            <span>From</span>
+            <input className="input" type="date" name="from" value={filters.from} onChange={changeFilter} />
+          </label>
+          <label className="transaction-filter-field">
+            <span>To</span>
+            <input className="input" type="date" name="to" value={filters.to} onChange={changeFilter} />
+          </label>
+
+          <label className="transaction-filter-field">
+            <span>Sort by</span>
+            <select className="input" name="sort" value={filters.sort} onChange={changeFilter}>
+              <option value="-date">Newest first</option>
+              <option value="date">Oldest first</option>
+              <option value="-amount">Highest amount</option>
+              <option value="amount">Lowest amount</option>
+            </select>
+          </label>
+
+          <button className="btn btn-ghost transaction-clear-button" onClick={clearFilters}>
+            Clear filters
+          </button>
+        </section>
+      )}
+
+      {error && <div className="error" role="alert">{error}</div>}
 
       {loading && transactions.length === 0 ? (
         <p className="empty">Loading...</p>
@@ -153,7 +205,7 @@ export default function Transactions() {
         <p className="empty">No transactions found.</p>
       ) : (
         <div className={`table-wrap ${loading ? "loading" : ""}`}>
-          <table>
+          <table className="transactions-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -169,8 +221,16 @@ export default function Transactions() {
                 <tr key={t._id}>
                   <td>{formatDate(t.date)}</td>
                   <td>
-                    <span className="dot" style={{ background: t.category.color }} />
-                    {t.category.name}
+                    <span className="transaction-category-cell">
+                      <span
+                        className="icon-badge transaction-category-icon"
+                        style={{ "--category-color": t.category.color }}
+                        aria-hidden="true"
+                      >
+                        {createElement(categoryIcon(t.category.icon), { size: 17 })}
+                      </span>
+                      {t.category.name}
+                    </span>
                   </td>
                   <td>{t.note || "-"}</td>
                   <td>{paymentLabel(t.paymentMethod)}</td>
@@ -179,15 +239,71 @@ export default function Transactions() {
                   </td>
                   <td>
                     <div className="row-actions">
-                      <button className="btn btn-outline btn-sm"
-                              onClick={() => setModal({ open: true, transaction: t })}>Edit</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t)}>Delete</button>
+                      <button
+                        className="icon-btn transaction-action"
+                        aria-label={`Edit ${t.category.name} transaction`}
+                        onClick={() => setModal({ open: true, transaction: t })}
+                      >
+                        <Pencil size={16} aria-hidden="true" />
+                      </button>
+                      <button
+                        className="icon-btn transaction-action delete-action"
+                        aria-label={`Delete ${t.category.name} transaction`}
+                        onClick={() => handleDelete(t)}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {transactions.length > 0 && (
+        <div className={`transaction-mobile-list ${loading ? "loading" : ""}`}>
+          {transactions.map((transaction) => {
+            const income = transaction.type === "income";
+            return (
+              <article className="transaction-mobile-card" key={transaction._id}>
+                <span
+                  className="icon-badge transaction-mobile-icon"
+                  style={{ "--category-color": transaction.category.color }}
+                  aria-hidden="true"
+                >
+                  {createElement(categoryIcon(transaction.category.icon), { size: 19 })}
+                </span>
+                <div className="transaction-mobile-main">
+                  <strong>{transaction.category.name}</strong>
+                  <span>{transaction.note || formatDate(transaction.date)}</span>
+                  <small>{paymentLabel(transaction.paymentMethod)} · {formatDate(transaction.date)}</small>
+                </div>
+                <div className="transaction-mobile-side">
+                  <strong className={income ? "amount-income" : "amount-expense"}>
+                    {income ? "+" : "−"}{formatMoney(transaction.amount, currency)}
+                  </strong>
+                  <div className="transaction-mobile-actions">
+                    <button
+                      className="icon-btn transaction-action"
+                      aria-label={`Edit ${transaction.category.name} transaction`}
+                      onClick={() => setModal({ open: true, transaction })}
+                    >
+                      <Pencil size={15} aria-hidden="true" />
+                    </button>
+                    <button
+                      className="icon-btn transaction-action delete-action"
+                      aria-label={`Delete ${transaction.category.name} transaction`}
+                      onClick={() => handleDelete(transaction)}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 

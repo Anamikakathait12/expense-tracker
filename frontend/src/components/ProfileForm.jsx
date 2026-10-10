@@ -36,8 +36,8 @@ export default function ProfileForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
+      {error && <div className="error" role="alert">{error}</div>}
+      {success && <div className="success" role="status">{success}</div>}
 
       <div className="field">
         <label htmlFor="email">Email</label>
@@ -62,7 +62,7 @@ export default function ProfileForm() {
         </span>
       </div>
 
-      <button className="btn" disabled={submitting || unchanged}>
+      <button className="btn profile-submit" disabled={submitting || unchanged}>
         {submitting ? "Saving..." : "Save changes"}
       </button>
     </form>

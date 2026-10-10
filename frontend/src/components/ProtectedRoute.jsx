@@ -4,6 +4,6 @@ import { useAuth } from "../context/AuthContext";
 export default function ProtectedRoute() {
   const { user, loading } = useAuth();
 
-  if (loading) return <p style={{ padding: 24 }}>Loading...</p>;
+  if (loading) return <p className="route-loading" role="status">Loading...</p>;
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }

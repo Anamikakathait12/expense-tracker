@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import getErrorMessage from "../utils/getErrorMessage";
+import DemoButton from "../components/DemoButton";
 
 export default function Register() {
   const { register } = useAuth();
@@ -25,11 +26,14 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h2 style={{ marginTop: 0 }}>Create account</h2>
+    <main className="auth-page">
+      <form className="card auth-card" onSubmit={handleSubmit}>
+        <span className="auth-brand-mark" aria-hidden="true">E</span>
+        <p className="auth-eyebrow">Make it yours</p>
+        <h1 className="auth-title">Create account</h1>
+        <p className="auth-description">A clearer picture of your money starts here.</p>
 
-        {error && <div className="error">{error}</div>}
+        {error && <div className="error" role="alert">{error}</div>}
 
         <div className="field">
           <label htmlFor="username">Username</label>
@@ -49,14 +53,15 @@ export default function Register() {
                  value={form.password} onChange={handleChange} />
         </div>
 
-        <button className="btn" disabled={submitting}>
+        <button className="btn auth-submit" disabled={submitting}>
           {submitting ? "Creating account..." : "Register"}
         </button>
 
         <p className="muted">
-          Already registered? <Link to="/login">Log in</Link>
+          Already have an account? <Link to="/login">Log in</Link>
         </p>
       </form>
-    </div>
+      <DemoButton label="Try the demo" className="btn auth-demo-button" />
+    </main>
   );
 }
