@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { ArrowDown, ArrowUp, Eye, EyeOff, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff } from "lucide-react";
 import { getSummary, getCompare, getByCategory, getMonthlyTrend } from "../api/analytics";
 import { getBudgets } from "../api/budgets";
 import { getTransactions } from "../api/transactions";
@@ -60,20 +60,20 @@ function CategoryIconBadge({ category, className = "" }) {
 
 function MiniTrend({ data, dataKey, id, stroke }) {
   return (
-    <div className="mini-trend" aria-hidden="true">
+    <div className="mini-trend dashboard-stat-sparkline" aria-hidden="true">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={stroke} stopOpacity={0.4} />
-              <stop offset="100%" stopColor={stroke} stopOpacity={0.03} />
+              <stop offset="0%" stopColor={stroke} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={stroke} stopOpacity={0.02} />
             </linearGradient>
           </defs>
           <Area
             type="monotone"
             dataKey={dataKey}
             stroke={stroke}
-            strokeWidth={2}
+            strokeWidth={1.25}
             fill={`url(#${id})`}
             isAnimationActive={false}
           />
@@ -191,16 +191,13 @@ export default function Dashboard() {
   };
 
   const balance = data?.summary.balance ?? 0;
-  const balanceTone = balance < 0 ? "is-negative" : "is-positive";
-
   return (
-    <>
+    <div className="dashboard-page">
       {user.isDemo && <DemoGuide />}
-      <section className="dashboard-header-zone" aria-label="Monthly balance overview">
+      <section className="dashboard-header-zone dash-hero" aria-label="Monthly balance overview">
         <div className="dashboard-header-row">
           <div>
-            <p className="dashboard-greeting">Hi, {user.username}</p>
-            <p className="dashboard-greeting-note">Here&apos;s your money overview</p>
+            <p className="dashboard-greeting">{user.username}</p>
           </div>
           <MonthPicker value={month} onChange={setMonth} />
         </div>
@@ -220,11 +217,10 @@ export default function Dashboard() {
             </button>
           </div>
           <p className="dashboard-balance-subline">
-            Income {money(data?.summary.income || 0)} <span>−</span> Expense {money(data?.summary.expense || 0)}
+            Income {money(data?.summary.income || 0)} <span>·</span> Expense {money(data?.summary.expense || 0)}
           </p>
-          <span className={`balance-direction ${balanceTone}`}>
-            {balance < 0 ? <TrendingDown size={15} /> : <TrendingUp size={15} />}
-            {balance < 0 ? "Spending is ahead" : "You are in the green"}
+          <span className="sr-only">
+            Balance trend: {balance < 0 ? "Spending is ahead" : "You are in the green"}
           </span>
         </div>
       </section>
@@ -235,11 +231,11 @@ export default function Dashboard() {
         !error && <p className="empty">Loading...</p>
       ) : (
         <>
-          <section className={`dashboard-stat-grid ${loading ? "dim" : ""}`} aria-label="Monthly income and expense">
+          <section className={`dashboard-stat-grid dash-stats ${loading ? "dim" : ""}`} aria-label="Monthly income and expense">
             <article className="dashboard-stat-card income-stat">
               <div className="dashboard-stat-heading">
-                <span>Income</span>
                 <span className="dashboard-stat-icon" aria-hidden="true"><ArrowDown size={17} /></span>
+                <span>Income</span>
               </div>
               <p className="dashboard-stat-value">{money(data.summary.income)}</p>
               <BalanceChange change={data.compare.change.income} goodWhen="up" />
@@ -247,8 +243,8 @@ export default function Dashboard() {
             </article>
             <article className="dashboard-stat-card expense-stat">
               <div className="dashboard-stat-heading">
-                <span>Expense</span>
                 <span className="dashboard-stat-icon" aria-hidden="true"><ArrowUp size={17} /></span>
+                <span>Expense</span>
               </div>
               <p className="dashboard-stat-value">{money(data.summary.expense)}</p>
               <BalanceChange change={data.compare.change.expense} goodWhen="down" />
@@ -356,6 +352,6 @@ export default function Dashboard() {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
