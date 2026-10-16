@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import DemoButton from "../components/DemoButton";
+import ScreenshotShowcase from "../components/ScreenshotShowcase";
 import { useAuth } from "../context/AuthContext";
 
 const features = [
@@ -84,10 +85,7 @@ export default function Landing() {
               edit or delete anything. It resets automatically after a short time.
             </p>
           </div>
-          {/* Screenshot placeholder: add product screenshots here when available. */}
-          <div className="landing-screenshot-placeholder" aria-label="Screenshot placeholder">
-            <span>Product screenshots coming soon</span>
-          </div>
+          <ScreenshotShowcase />
         </section>
 
         <section className="landing-section" aria-labelledby="features-title">
