@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import DemoButton from "../components/DemoButton";
+import HeroCards from "../components/HeroCards";
 import ScreenshotShowcase from "../components/ScreenshotShowcase";
 import { useAuth } from "../context/AuthContext";
 
@@ -63,7 +64,7 @@ export default function Landing() {
       </header>
 
       <main>
-        <section className="landing-hero" aria-labelledby="landing-title">
+        <section className="landing-hero hero-cards-layout" aria-labelledby="landing-title">
           <div className="landing-hero-copy">
             <p className="landing-eyebrow">A clearer view of your money</p>
             <h1 id="landing-title">Know where your money goes.</h1>
@@ -85,6 +86,7 @@ export default function Landing() {
               edit or delete anything. It resets automatically after a short time.
             </p>
           </div>
+          <HeroCards />
           <ScreenshotShowcase />
         </section>
 
