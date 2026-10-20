@@ -1,237 +1,217 @@
-# Expense Tracker with Analytics
+# Expense Tracker
 
-A full-stack MERN application where users log income and expenses, organise them by category, set monthly budgets, and see analytics about their spending.
-
-> **Status:** the MERN application includes the Express API and React frontend. The live demo creates an isolated, expiring sandbox for each visitor.
+A MERN application for tracking income and expenses, managing categories and monthly budgets, and reviewing spending analytics. The API uses JWTs in an httpOnly cookie. Demo mode creates a separate expiring sandbox for each visitor.
 
 ## Features
 
-**Authentication**
-- Register, login and logout
-- JWT stored in an httpOnly cookie, with an auth middleware
-- `GET /me` to restore the session after a page refresh
-- Private demo sandbox with randomized sample data; no shared demo account
-- Demo accounts and their data expire automatically; demo users are limited to 300 transactions, 30 categories and 30 budgets
+- Register, log in, log out, and restore a session after refresh.
+- Create, edit, filter, search, sort, paginate, and delete income and expense transactions.
+- Use default and custom categories.
+- Set monthly budgets and see spending, remaining amounts, and budget status.
+- View monthly summaries, category totals, daily totals, trends, top expenses, and month comparisons.
+- Try demo mode with randomized sample data in an isolated sandbox.
+- View screenshots of the [dashboard](frontend/public/screenshots/dashboard.png), [transactions](frontend/public/screenshots/transactions.png), [analytics](frontend/public/screenshots/analytics.png), and [budgets](frontend/public/screenshots/budgets.png).
 
-**Transactions**
-- Create, edit and delete income and expense entries
-- Fields: amount, type, category, date, note, payment method
-- Filtering (type, category, date range), search, sorting and pagination
+## Technology
 
-**Categories**
-- 11 default categories created automatically on registration
-- Custom categories with a name, colour and type
-- A category that has transactions cannot be deleted or have its type changed
-
-**Budgets**
-- Monthly budget per expense category
-- Spent vs limit with a status: `ok`, `warning` (80% or more) and `exceeded` (100% or more)
-
-**Analytics** (MongoDB aggregation pipelines)
-- Income, expense and balance for a month
-- Spending by category (for pie or donut charts)
-- Monthly trend for the last N months (for line and bar charts)
-- Daily spending for a month
-- Top expenses of the month
-- Comparison with the previous month, with percentage change
-
-## Tech stack
-
-| Layer | Technology |
+| Area | Technology |
 |---|---|
-| Runtime | Node.js |
-| Framework | Express |
-| Database | MongoDB (Atlas) with Mongoose |
-| Auth | JWT in an httpOnly cookie, bcrypt password hashing |
-| Validation | Zod |
-| Frontend | React (Vite), React Router, Recharts, Axios |
+| Frontend | React, Vite, React Router, Recharts, Axios |
+| Backend | Node.js, Express 5 |
+| Database | MongoDB with Mongoose |
+| Authentication | JWT cookie, bcrypt |
+| Request validation | Zod |
 
-## Design decisions
+Amounts are stored as integer paise and returned by the API in rupees. Backend queries are scoped to the authenticated user. Date ranges and analytics use `APP_TIMEZONE`.
 
-- **Money is stored as integer paise** (Rs 250.75 is saved as `25075`) to avoid floating-point errors. The API accepts and returns rupees.
-- **Every query is scoped to the logged-in user** (`user: req.user.id`). The user id comes from the token, never from the request body. Another user's data returns `404`, so its existence is not revealed.
-- **Analytics use aggregation pipelines**, not JavaScript loops, with `$match` first so the compound index `{ user, date }` is used. An explain plan over 5,000 seeded transactions shows an index scan (`IXSCAN`) that examines only as many documents as it returns.
-- **Timezone-aware dates.** Month boundaries and day or month grouping use a configurable timezone (`APP_TIMEZONE`), so a transaction at 11:30 PM is not counted in the wrong day or month.
-- **Layered validation:** Zod at the request, business rules in the controller (for example, a category must belong to the user and match the transaction type), and Mongoose at the schema.
-- **One error format.** A global error handler turns custom, Mongoose and JWT errors into `{ success, message, errors }`.
-- **Missing days and months are filled in on the server**, so charts receive continuous series.
+## Project layout
 
-## Project structure
-
-```
-expense-tracker/
-  backend/
-    server.js
-    src/
-      app.js
-      db/db.js
-      config/        demo expiry and active-session settings
-      models/        user, category, transaction, budget
-      controller/    auth, category, transaction, budget, analytics
-      routes/        auth, category, transaction, budget, analytics
-      middleware/    auth, validate, error, demo rate limiter
-      validators/    auth, category, transaction, budget, analytics
-      services/      demo sandbox creation and fallback cleanup
-      utils/         ApiError, asyncHandler, token, money, dateRange, defaultCategories
-      seed/          seed.js, explain.js
-  frontend/
-    src/             React application, pages, components and API client
+```text
+backend/
+  server.js
+  src/
+    routes/       API routes
+    controller/   Request handlers
+    models/       Mongoose models
+    middleware/   Authentication, validation, errors, demo limiter
+    services/     Demo creation and cleanup
+    seed/         Seed and explain scripts
+frontend/
+  src/            React application and API client
+  public/         Static assets and screenshots
+  vercel.json     Vercel API rewrite and SPA fallback
 ```
 
-## Getting started
-
-### Prerequisites
+## Requirements
 
 - Node.js 18 or newer
-- A MongoDB database: a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster or a local MongoDB
+- MongoDB, either local or MongoDB Atlas
 
-### Setup
+## Local setup
+
+Install and configure the backend:
 
 ```bash
-git clone https://github.com/Anamikakathait12/expense-tracker.git
-cd expense-tracker/backend
+cd backend
 npm install
 ```
 
-Create your environment file from the example (Windows: `copy .env.example .env`, macOS or Linux: `cp .env.example .env`), then fill in the values.
-
-### Environment variables
-
-| Variable | Description |
-|---|---|
-| `PORT` | Server port (default `5000`) |
-| `NODE_ENV` | `development` or `production` |
-| `MONGO_URI` | MongoDB connection string, including the database name, e.g. `mongodb+srv://USER:PASSWORD@cluster.mongodb.net/expense-tracker?retryWrites=true&w=majority` |
-| `JWT_SECRET` | Long random string used to sign tokens |
-| `JWT_EXPIRES_IN` | Token lifetime, e.g. `7d` |
-| `CLIENT_URL` | Frontend origin allowed by CORS, e.g. `http://localhost:5173` |
-| `APP_TIMEZONE` | Timezone for month and day boundaries, e.g. `Asia/Kolkata` |
-| `DEMO_TTL_MINUTES` | Demo sandbox lifetime in minutes (default `120`, clamped to `5`–`1440`) |
-| `DEMO_MAX_ACTIVE` | Maximum active demo sandboxes (default `200`) |
-| `DNS_SERVERS` | Optional. See Troubleshooting |
-
-Generate a secret with:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
-
-Never commit `.env`. It is listed in `.gitignore`.
-
-### Run
+Copy `backend/.env.example` to `backend/.env`, then set the required database and JWT values. Start the API:
 
 ```bash
 npm run dev
 ```
 
-You should see `MongoDB connected` and `Server running on port 5000`. Check `http://localhost:5000/api/health`; a running version with demo support returns `features.demo: true`.
+The API listens on port `5000` by default. Its health endpoint is `http://localhost:5000/api/health`.
 
-### Run the frontend
-
-In a second terminal:
+In another terminal, configure and start the frontend:
 
 ```bash
-cd expense-tracker/frontend
+cd frontend
 npm install
+```
+
+Set `VITE_API_URL=http://localhost:5000/api` in `frontend/.env` for local development, then run:
+
+```bash
 npm run dev
 ```
 
-The development frontend defaults to `http://localhost:5173`, and the API defaults to `http://localhost:5000/api`. To use a different API origin, set `VITE_API_URL` to the API base URL, including `/api` (for example, `https://api.example.com/api`).
+The Vite development server normally runs at `http://localhost:5173`. If you change `VITE_API_URL`, restart Vite.
 
-### Demo sandbox lifecycle
+## Environment variables
 
-Each `POST /api/auth/demo` request creates a new user with its own randomized sample data and sets the normal httpOnly auth cookie. Visitors can create, edit and delete data in their sandbox. The demo endpoint is rate limited to 20 requests per hour per IP; new demo creation is also paused with a `503` response when the active-session cap is reached. Demo-only create limits return `429` with a friendly message.
+Use placeholder values in local and deployment configuration. Never commit `.env` files or real secrets.
 
-`DEMO_TTL_MINUTES` sets a sandbox lifetime from 5 to 1440 minutes (default 120). MongoDB TTL indexes automatically expire the demo user, categories, transactions and budgets; a periodic server cleanup is a fallback. Real-user documents do not receive an expiry date and are not affected. `DEMO_MAX_ACTIVE` sets the active sandbox cap (default 200).
+### Backend
 
-### Seed test data (development only)
+| Variable | Required | Description |
+|---|---:|---|
+| `PORT` | No | Listening port; defaults to `5000`. Render supplies this value when deployed. |
+| `NODE_ENV` | No | Set to `production` for deployment; cookie security and error details depend on this value. |
+| `MONGO_URI` | Yes | MongoDB connection string, including the database name, e.g. `<MONGODB_CONNECTION_STRING_WITH_DATABASE_NAME>`. |
+| `JWT_SECRET` | Yes | Secret used to sign and verify authentication tokens. Use a strong private value. |
+| `JWT_EXPIRES_IN` | No | JWT lifetime passed to the token signer; e.g. `7d`. |
+| `CLIENT_URL` | Yes for browser CORS | Exact frontend origin, e.g. `https://<VERCEL_DOMAIN>`; no trailing slash. |
+| `APP_TIMEZONE` | No | Timezone for date and month calculations; defaults to `Asia/Kolkata`. |
+| `DEMO_TTL_MINUTES` | No | Demo lifetime in minutes; defaults to `120` and is clamped to `5`–`1440`. |
+| `DEMO_MAX_ACTIVE` | No | Active demo sandbox cap; defaults to `200` when unset or invalid. |
+| `DNS_SERVERS` | No | Optional comma-separated DNS resolver addresses, e.g. `<DNS_IP_1>,<DNS_IP_2>`. |
+| `DEBUG_PROXY` | No | Set to `true` to log `req.ip` and `X-Forwarded-For` for demo-start requests while checking proxy configuration. |
 
-Register a user with the email `rahul@test.com` through the API and make sure that user has at least one income and one expense category (new users get defaults automatically). Then:
+### Frontend
 
-```bash
-npm run seed -- --reset
-```
+| Variable | Local development | Production |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:5000/api` | `/api` |
 
-This inserts 5,000 transactions spread over the last 12 months. Never run it against a production database.
+## Scripts
 
-To check that queries use the index:
+Run frontend commands from `frontend/` and backend commands from `backend/`.
 
-```bash
-npm run explain
-```
+| Package | Command | Description |
+|---|---|---|
+| Backend | `npm run dev` | Start the API with nodemon. |
+| Backend | `npm start` | Start the API with Node.js. |
+| Backend | `npm run seed -- --reset` | Seed the development database; do not run against production. |
+| Backend | `npm run explain` | Run the transaction query explain script. |
+| Backend | `npm test` | Not implemented; the current script exits with an error. |
+| Frontend | `npm run dev` | Start the Vite development server. |
+| Frontend | `npm run build` | Build the frontend for deployment. |
+| Frontend | `npm run preview` | Preview the production build locally. |
+| Frontend | `npm run lint` | Run ESLint. |
+
+## Demo sandbox
+
+Try the live demo: [expense-tracker-sandy-five-93.vercel.app/demo](https://expense-tracker-sandy-five-93.vercel.app/demo).
+
+`POST /api/auth/demo` creates a new guest user with randomized credentials and sample transactions and budgets. The server sets the normal authentication cookie for that guest. Each demo and its created categories, transactions, and budgets receive an `expiresAt` value.
+
+The default lifetime is 120 minutes; `DEMO_TTL_MINUTES` is clamped from 5 to 1440 minutes. MongoDB TTL indexes expire documents by `expiresAt`. The server also runs a cleanup job every 15 minutes and starts cleanup after demo creation.
+
+Demo creation is limited to 20 requests per hour per IP. The active demo cap defaults to 200. Each demo user can create up to 300 transactions, 30 categories, and 30 budgets. These are demo-specific limits; there is no global API rate limiter.
 
 ## API reference
 
-All routes except auth and health require a logged-in user (the `token` cookie). Every response has `success: true` or `success: false` with a `message`.
+Protected routes require the `token` cookie set by registration, login, or demo start. `POST /api/auth/logout` is public and clears the cookie.
 
 ### Auth
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Create an account and log in |
-| POST | `/api/auth/login` | Log in |
-| POST | `/api/auth/logout` | Log out |
-| GET | `/api/auth/me` | Current user |
-| POST | `/api/auth/demo` | Start an isolated demo sandbox |
-| GET | `/api/health` | API status and feature flags, including `features.demo` |
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Create an account and sign in. | No |
+| `POST` | `/api/auth/login` | Sign in. | No |
+| `POST` | `/api/auth/logout` | Clear the authentication cookie. | No |
+| `GET` | `/api/auth/me` | Return the current user. | Yes |
+| `PUT` | `/api/auth/profile` | Update the current user's profile. | Yes |
+| `POST` | `/api/auth/demo` | Create and sign in to a demo sandbox. | No |
 
 ### Categories
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/categories` | List my categories |
-| POST | `/api/categories` | Create a category |
-| PUT | `/api/categories/:id` | Update name, colour or type |
-| DELETE | `/api/categories/:id` | Delete (blocked if it has transactions) |
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `GET` | `/api/categories` | List the current user's categories. | Yes |
+| `POST` | `/api/categories` | Create a category. | Yes |
+| `PUT` | `/api/categories/:id` | Update a category. | Yes |
+| `DELETE` | `/api/categories/:id` | Delete an unused category. | Yes |
 
 ### Transactions
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/transactions` | Create |
-| GET | `/api/transactions` | List with filters |
-| GET | `/api/transactions/:id` | Get one |
-| PUT | `/api/transactions/:id` | Update the fields sent |
-| DELETE | `/api/transactions/:id` | Delete |
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `GET` | `/api/transactions` | List transactions with optional filters. | Yes |
+| `POST` | `/api/transactions` | Create a transaction. | Yes |
+| `GET` | `/api/transactions/:id` | Get one transaction. | Yes |
+| `PUT` | `/api/transactions/:id` | Update a transaction. | Yes |
+| `DELETE` | `/api/transactions/:id` | Delete a transaction. | Yes |
 
-List query parameters: `type`, `category`, `from`, `to`, `search`, `page` (default 1), `limit` (default 10, max 100), `sort` (`date`, `-date`, `amount`, `-amount`).
+List query parameters: `type`, `category`, `from`, `to`, `search`, `page` (default `1`), `limit` (default `10`, maximum `100`), and `sort` (`date`, `-date`, `amount`, or `-amount`).
 
 ### Budgets
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/budgets` | Set a budget for a category and month |
-| GET | `/api/budgets?month=2026-10` | Budgets with `spent`, `remaining`, `percentUsed` and `status` |
-| PUT | `/api/budgets/:id` | Change the limit |
-| DELETE | `/api/budgets/:id` | Delete |
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `GET` | `/api/budgets` | List budgets for a month, including spend and status. | Yes |
+| `POST` | `/api/budgets` | Create a budget for an expense category and month. | Yes |
+| `PUT` | `/api/budgets/:id` | Update a budget limit. | Yes |
+| `DELETE` | `/api/budgets/:id` | Delete a budget. | Yes |
+
+The `GET` endpoint accepts `month` in `YYYY-MM` format; it defaults to the current month.
 
 ### Analytics
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/analytics/summary?month=2026-10` | Income, expense, balance |
-| GET | `/api/analytics/by-category?month=2026-10&type=expense` | Totals and percent per category |
-| GET | `/api/analytics/monthly-trend?months=6` | Income, expense, balance per month |
-| GET | `/api/analytics/daily?month=2026-10&type=expense` | Total for every day of the month |
-| GET | `/api/analytics/top-expenses?month=2026-10&limit=5` | Largest expenses |
-| GET | `/api/analytics/compare?month=2026-10` | This month vs the previous month |
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `GET` | `/api/analytics/summary` | Monthly income, expense, and balance. | Yes |
+| `GET` | `/api/analytics/by-category` | Totals by category for a month and type. | Yes |
+| `GET` | `/api/analytics/top-expenses` | Largest expenses for a month. | Yes |
+| `GET` | `/api/analytics/daily` | Daily totals for a month and type. | Yes |
+| `GET` | `/api/analytics/monthly-trend` | Income, expense, and balance by month. | Yes |
+| `GET` | `/api/analytics/compare` | Compare a month with the previous month. | Yes |
 
-If `month` is omitted, the current month is used.
+Analytics routes accept query parameters such as `month`, `type`, `months`, and `limit`, depending on the endpoint. If `month` is omitted where supported, the current month is used.
 
-### Example
+### Health
+
+| Method | Path | Description | Login required |
+|---|---|---|---|
+| `GET` | `/api/health` | API status and demo feature flag. | No |
+
+### Example request and response
 
 ```http
 POST /api/transactions
 Content-Type: application/json
+Cookie: token=<JWT>
 
-{ "type": "expense", "amount": 250.75, "category": "<category id>", "note": "Lunch", "paymentMethod": "upi" }
+{ "type": "expense", "amount": 250.75, "category": "<CATEGORY_ID>", "note": "Lunch", "paymentMethod": "upi" }
 ```
 
 ```json
 {
   "success": true,
   "transaction": {
-    "_id": "...",
+    "_id": "<TRANSACTION_ID>",
     "type": "expense",
     "amount": 250.75,
     "category": { "name": "Food", "color": "#ef4444", "type": "expense" },
@@ -241,39 +221,83 @@ Content-Type: application/json
 }
 ```
 
-Error responses always look like this:
+Responses use `success`, `message`, and `errors` as applicable. Validation errors include the field and message:
 
 ```json
-{ "success": false, "message": "Validation failed", "errors": [{ "field": "amount", "message": "Amount must be greater than 0" }] }
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": [{ "field": "amount", "message": "Amount must be greater than 0" }]
+}
 ```
+
+## Deployment
+
+### Vercel frontend
+
+| Setting | Value |
+|---|---|
+| Root directory | `frontend` |
+| Build command | `npm run build` |
+| Output / publish directory | `dist` |
+| Environment variable | `VITE_API_URL=/api` |
+
+The `/api/:path*` rewrite in `frontend/vercel.json` must point to the actual Render host. Replace `__BACKEND_HOST__` with that host before deploying.
+
+### Render API
+
+| Setting | Value |
+|---|---|
+| Root directory | `backend` |
+| Build command | `npm install` |
+| Start command | `npm start` |
+
+Configure these Render environment variables:
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `MONGO_URI` | `<MONGODB_CONNECTION_STRING_WITH_DATABASE_NAME>` |
+| `JWT_SECRET` | `<PRIVATE_RANDOM_SECRET>` |
+| `JWT_EXPIRES_IN` | `7d` or the desired token lifetime |
+| `CLIENT_URL` | `https://<VERCEL_DOMAIN>` (exact origin, no trailing slash) |
+| `APP_TIMEZONE` | `Asia/Kolkata` or the desired timezone |
+| `DEMO_TTL_MINUTES` | `120` or the desired demo lifetime |
+| `DEMO_MAX_ACTIVE` | `200` or the desired active-demo cap |
+| `DEBUG_PROXY` | `false` normally; temporarily set `true` to inspect proxy logs |
+| `DNS_SERVERS` | Optional, comma-separated resolver IPs |
+
+Render provides `PORT`; the application uses that value when supplied and otherwise defaults to `5000`.
+
+Safari blocks third-party cookies, so the Vercel rewrite serves API requests under the frontend's origin. Set `VITE_API_URL=/api` in production so browser requests use that same origin. The rewrite forwards `/api/*` to the Render API. A free Render server can take up to a minute to wake up; leave the page open while a request is loading.
 
 ## Testing
 
-Endpoints were tested manually with Postman, including validation failures, ownership checks (a second user receives `404` on another user's data), timezone boundaries, and a 5,000-transaction dataset. Automated tests with Jest and Supertest are planned.
+Endpoints were tested manually with Postman (validation failures, cross-user access returning 404, timezone boundaries, a
+5,000-transaction dataset). Automated tests are on the roadmap.
 
 ## Troubleshooting
 
-- **`ERR_MODULE_NOT_FOUND`:** local imports need the `.js` extension (the project uses ES modules).
-- **`querySrv ECONNREFUSED` when connecting to Atlas:** some networks cannot resolve Atlas SRV records. Set `DNS_SERVERS=8.8.8.8,8.8.4.4` in `.env`.
-- **Data appears in a database called `test`:** the database name is missing from `MONGO_URI`. Add it after the host: `.../expense-tracker?retryWrites=true`.
-- **`401` right after logging in from a browser or Postman:** the `token` cookie was not sent. Check that cookies are enabled and the request goes to the same host.
-- **`POST /api/auth/demo` returns 404:** check that the deployed API has the demo route and that `GET /api/health` returns `"features":{"demo":true}`. The frontend request uses the API base URL plus `/auth/demo`; set `VITE_API_URL` to the API origin ending in `/api`.
-- **Demo session is busy:** the configured active sandbox cap may have been reached. Wait for an existing sandbox to expire, or raise `DEMO_MAX_ACTIVE` if the server can support more active sessions.
+| Symptom | Check |
+|---|---|
+| `ERR_MODULE_NOT_FOUND` | Local imports in this ES module project need the `.js` extension. |
+| `querySrv ECONNREFUSED` | Some networks cannot resolve MongoDB Atlas SRV records. Set optional `DNS_SERVERS` to comma-separated resolver IPs. |
+| Data appears in a database named `test` | Include the intended database name in `MONGO_URI`, for example `<MONGODB_HOST>/<DATABASE_NAME>?<OPTIONS>`. |
+| Frontend shows `Request failed with status code 404` or `Network Error` | Check `VITE_API_URL`, restart the Vite dev server after changing it, and make sure the backend is running. For deployment, check the Vercel `/api` rewrite destination. |
+| Login works, but the session is lost in Safari | Ensure production uses the Vercel `/api` proxy so the browser sees the API under the frontend origin. |
+| CORS error | Set `CLIENT_URL` to the exact frontend origin, including scheme and host but no trailing slash. |
 
 ## Roadmap
 
-- [x] Auth, error handling, auth middleware
-- [x] Categories (defaults, edit, delete protection)
-- [x] Transactions CRUD with filters, search, sorting, pagination
-- [x] Budgets with spent vs limit
-- [x] Analytics endpoints
-- [x] React frontend: auth pages, dashboard, transactions, budgets, analytics charts and demo sandbox
+- [x] Authentication, profile updates, and session restoration
+- [x] Categories and transaction CRUD
+- [x] Monthly budgets and analytics
+- [x] Isolated demo sandboxes with expiry and per-demo limits
 - [ ] CSV export
 - [ ] Recurring transactions
-- [ ] Broader API hardening: Helmet, production CORS and cookie review
-- [ ] Deployment (Render or Railway for the API, Vercel for the frontend, MongoDB Atlas)
-- [ ] Refresh tokens, forgot password, receipt upload, savings goals, unit tests
-
-## License
-
-MIT
+- [ ] Helmet and global rate limiting
+- [ ] Automated tests
+- [ ] Refresh tokens
+- [ ] Docker support
+- [ ] Receipt upload
+- [ ] Forgot password
