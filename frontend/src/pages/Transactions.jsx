@@ -10,15 +10,15 @@ import { paymentLabel } from "../utils/constants";
 import { useAuth } from "../context/AuthContext";
 import { useQuickAdd } from "../context/QuickAddContext";
 import categoryIcon from "../utils/categoryIcon";
-import { Pencil, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Download, Pencil, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 
 const EMPTY_FILTERS = { type: "", category: "", from: "", to: "", sort: "-date" };
 const LIMIT = 10;
 
 // Only send filters that are set. The date inputs become the start and end of the
 // day in the browser's timezone, so the last day of a range is fully included.
-const buildParams = (filters, search, page) => {
-  const params = { page, limit: LIMIT, sort: filters.sort };
+const buildParams = (filters, search, page, limit = LIMIT) => {
+  const params = { page, limit, sort: filters.sort };
   if (filters.type) params.type = filters.type;
   if (filters.category) params.category = filters.category;
   if (search) params.search = search;
@@ -42,6 +42,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -118,13 +119,93 @@ export default function Transactions() {
     }
   };
 
+  const handleExport = async () => {
+    if (exporting) return;
+
+    setExporting(true);
+    setError("");
+    try {
+      // The API paginates results. Fetch every page so the export is complete,
+      // while reusing the same search, filters, date range, and sort order.
+      const firstResponse = await getTransactions(buildParams(filters, debouncedSearch, 1, 100));
+      const allTransactions = [...(firstResponse.data?.transactions || [])];
+      const totalPages = Math.max(1, Number(firstResponse.data?.pagination?.totalPages) || 1);
+
+      for (let exportPage = 2; exportPage <= totalPages; exportPage += 1) {
+        const response = await getTransactions(
+          buildParams(filters, debouncedSearch, exportPage, 100)
+        );
+        allTransactions.push(...(response.data?.transactions || []));
+      }
+
+      if (allTransactions.length === 0) {
+        setError("There are no transactions matching the current filters to export.");
+        return;
+      }
+
+      const escapeCsvCell = (value) => {
+        const text = String(value ?? "");
+        return /[",\r\n]/.test(text) ? '"' + text.replaceAll('"', '""') + '"' : text;
+      };
+      const headers = ["Date", "Type", "Category", "Note", "Payment Method", "Amount", "Currency"];
+      const rows = allTransactions.map((transaction) => [
+        new Date(transaction.date).toISOString(),
+        transaction.type,
+        transaction.category?.name || "",
+        transaction.note || "",
+        paymentLabel(transaction.paymentMethod),
+        Number(transaction.amount).toFixed(2),
+        currency,
+      ]);
+      const csv = [headers, ...rows]
+        .map((row) => row.map(escapeCsvCell).join(","))
+        .join("\r\n");
+      // The UTF-8 BOM helps spreadsheet apps open the CSV with the correct encoding.
+      const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "expense-tracker-transactions-" + new Date().toISOString().slice(0, 10) + ".csv";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
-      <div className="page-header">
-        <h1>Transactions</h1>
-        <button className="btn btn-primary transaction-add-button" onClick={openAdd}>
-          + Add transaction
-        </button>
+      <div className="page-header transactions-page-header">
+        <div className="transactions-title-wrap">
+          <p className="transactions-eyebrow">Your money, at a glance</p>
+          <h1>Transactions</h1>
+          <p className="transactions-intro">Search, filter, and export your complete history.</p>
+        </div>
+        <div className="transactions-header-actions">
+          <button
+            className="btn btn-outline transaction-export-button"
+            type="button"
+            onClick={handleExport}
+            disabled={exporting || pagination.total === 0}
+            aria-busy={exporting}
+          >
+            <Download size={17} aria-hidden="true" />
+            {exporting ? "Preparing CSV..." : "Export CSV"}
+          </button>
+          <button className="btn btn-primary transaction-add-button" type="button" onClick={openAdd}>
+            + Add transaction
+          </button>
+        </div>
+      </div>
+      <div className="transactions-results-bar" aria-live="polite">
+        <span>
+          <strong>{pagination.total.toLocaleString("en-IN")}</strong> transaction{pagination.total === 1 ? "" : "s"}
+        </span>
+        <span>{activeFilterCount > 0 || debouncedSearch ? "Filtered results" : "All activity"}</span>
       </div>
 
       <div className="transaction-search-row">
