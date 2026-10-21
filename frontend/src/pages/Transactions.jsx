@@ -145,7 +145,12 @@ export default function Transactions() {
 
       const escapeCsvCell = (value) => {
         const text = String(value ?? "");
-        return /[",\r\n]/.test(text) ? '"' + text.replaceAll('"', '""') + '"' : text;
+        // Prefix spreadsheet formula-like cells so user-entered notes cannot
+        // execute as formulas when the CSV is opened in spreadsheet software.
+        const safeText = /^[\s]*[=+\-@]/.test(text) ? "'" + text : text;
+        return /[",\r\n]/.test(safeText)
+          ? '"' + safeText.replace(/"/g, '""') + '"'
+          : safeText;
       };
       const headers = ["Date", "Type", "Category", "Note", "Payment Method", "Amount", "Currency"];
       const rows = allTransactions.map((transaction) => [
@@ -169,7 +174,7 @@ export default function Transactions() {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
