@@ -1,0 +1,65 @@
+
+services:
+  mongodb-atlas-local:
+    image: mongodb/mongodb-atlas-local:latest
+    container_name: mongodb-atlas-local
+    hostname: mongodb-atlas-local
+    restart: unless-stopped
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: admin
+      MONGODB_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - atlas_data:/data/db
+      - atlas_config:/data/configdb
+    networks:
+      - expense-tracker-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: expense-tracker-backend:local
+    container_name: backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      MONGO_URI: "mongodb://admin:${MONGO_ROOT_PASSWORD}@mongodb-atlas-local:27017/expense_tracker?directConnection=true&authSource=admin"
+      CLIENT_URL: "http://${EC2_PUBLIC_IP}:5173"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb-atlas-local
+    networks:
+      - expense-tracker-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "http://${EC2_PUBLIC_IP}:5000/api"
+    image: expense-tracker-frontend:local
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - expense-tracker-net
+
+volumes:
+  atlas_data:
+    external: true
+    name: atlas_data
+  atlas_config:
+    external: true
+    name: atlas_config
+
+networks:
+  expense-tracker-net:
+    external: true
+    name: expense-tracker-net
+
+
