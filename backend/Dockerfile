@@ -1,4 +1,18 @@
-FROM node:22-alpine
+# FROM node:22-alpine
+
+# WORKDIR /app
+
+# COPY package*.json ./
+
+# RUN npm install
+
+# COPY . .
+
+# EXPOSE 5000
+
+# CMD ["npm", "start"]
+
+FROM node:22-alpine AS dependencies
 
 WORKDIR /app
 
@@ -6,7 +20,18 @@ COPY package*.json ./
 
 RUN npm install
 
+# ------------------------ STAGE-2 ---------------------
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+
+RUN mkdir -p /app/.data && chown -R node:node /app/.data
+
+USER node
 
 EXPOSE 5000
 
