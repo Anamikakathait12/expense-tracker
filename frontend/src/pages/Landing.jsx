@@ -35,6 +35,11 @@ const features = [
     title: "Private demo sandbox",
     description: "Every visitor gets isolated sample data to explore safely.",
   },
+  {
+    icon: "⇩",
+    title: "Export-ready history",
+    description: "Download filtered transactions as a spreadsheet-friendly CSV file.",
+  },
 ];
 
 const technologies = [
@@ -123,7 +128,7 @@ export default function Landing() {
       <footer className="landing-footer">
         <span>Project in progress</span>
         <a
-          href="https://github.com/Anamikakathait12/expense-tracker"
+          href="https://github.com/akverma24400/expense-tracker-2.o"
           target="_blank"
           rel="noopener noreferrer"
         >

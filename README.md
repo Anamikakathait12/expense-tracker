@@ -6,6 +6,7 @@ A MERN application for tracking income and expenses, managing categories and mon
 
 - Register, log in, log out, and restore a session after refresh.
 - Create, edit, filter, search, sort, paginate, and delete income and expense transactions.
+- Export all transactions matching the current search and filters to a CSV file.
 - Use default and custom categories.
 - Set monthly budgets and see spending, remaining amounts, and budget status.
 - View monthly summaries, category totals, daily totals, trends, top expenses, and month comparisons.
@@ -293,7 +294,7 @@ Endpoints were tested manually with Postman (validation failures, cross-user acc
 - [x] Categories and transaction CRUD
 - [x] Monthly budgets and analytics
 - [x] Isolated demo sandboxes with expiry and per-demo limits
-- [ ] CSV export
+- [x] CSV export
 - [ ] Recurring transactions
 - [ ] Helmet and global rate limiting
 - [ ] Automated tests
