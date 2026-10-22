@@ -1895,3 +1895,86 @@ tr:last-child td { border-bottom: 0; }
     margin: 4px -2px 0;
   }
 }
+
+/* Transaction page polish and CSV export */
+.transactions-page-header {
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+.transactions-title-wrap { min-width: 0; }
+.transactions-eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.transactions-page-header h1 {
+  font-size: clamp(1.9rem, 3.8vw, 2.45rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.transactions-intro {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.transactions-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.transactions-page-header .transaction-add-button { display: inline-flex; }
+.transaction-export-button {
+  gap: 8px;
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 5px 18px rgba(10, 46, 35, 0.06);
+}
+.transaction-export-button:not(:disabled):hover {
+  background: var(--soft-surface);
+  transform: translateY(-1px);
+}
+.transaction-export-button svg { color: var(--accent); }
+.transactions-results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 2px 13px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.transactions-results-bar strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.transactions-results-bar > span:last-child {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--soft-surface);
+  color: var(--soft-text);
+  font-size: 10px;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .transactions-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .transactions-header-actions { width: 100%; }
+  .transactions-header-actions .btn { min-width: 0; flex: 1; }
+}
+@media (max-width: 390px) {
+  .transactions-page-header h1 { font-size: 1.8rem; }
+  .transactions-intro { font-size: 12px; }
+  .transactions-header-actions .btn { padding-right: 12px; padding-left: 12px; font-size: 13px; }
+}
